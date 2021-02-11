@@ -1,9 +1,10 @@
-def final_processing(encode_method, years_data, only_one, feature_set, feature_names):
+def final_processing(encode_method, years_data, only_one, feature_set, feature_names, ALL_FEATURES_TIME):
     import h5py
     import pandas as pd
     
-    with h5py.File("../DATA/PROCESSED/standardized_stacked_imputed/2yrprev_within3.h5", 'r') as hf:
-        ALL_FEATURES_TIME = hf["features"][:]
+
+    #with h5py.File("../DATA/PROCESSED/standardized_demographics_stacked_imputed/2yrprev_within3.h5", 'r') as hf:
+    #    ALL_FEATURES_TIME = hf["features"][:]
     
     simplify_apoe = True
     years = 2
@@ -22,6 +23,11 @@ def final_processing(encode_method, years_data, only_one, feature_set, feature_n
                                                       'apoe_genotype__22.0', 'apoe_genotype__23.0', 
                                                       'apoe_genotype__24.0', 'apoe_genotype__33.0', 
                                                       'apoe_genotype__34.0', 'apoe_genotype__44.0']
+    feature_set_dict['baseline_demographics_withmci_cols'] = ['age_at_visit', 'educ', 'msex', 
+                                                              'apoe_genotype__22.0', 'apoe_genotype__23.0',
+                                                              'apoe_genotype__24.0', 'apoe_genotype__33.0',
+                                                              'apoe_genotype__34.0', 'apoe_genotype__44.0',
+                                                              'dcfdx__2.0', 'dcfdx__3.0']
     feature_set_dict['baseline_mci_cols'] = ['dcfdx__2.0', 'dcfdx__3.0']
     feature_set_dict['baseline_mmse30_cols'] = ['age_at_visit', 'educ', 'msex', 
                                                 'apoe_genotype__22.0', 'apoe_genotype__23.0', 
@@ -121,7 +127,7 @@ def final_processing(encode_method, years_data, only_one, feature_set, feature_n
         demographics.rename(columns={'apoe_genotype__44.0': 'apoe4_2copies'}, inplace=True)
         demographics.drop(labels=apoe_cols, axis=1, inplace=True)
 
-    if cols_name == 'baseline_mci_cols':
+    if cols_name in ['baseline_mci_cols', 'baseline_demographics_withmci_cols']:
         if not only_one:
             for i in range(years_data+1):
                 demographics['mci_'+str(i)+'yearsago'] = demographics['dcfdx__2.0_'+str(i)+'yearsago'] + demographics['dcfdx__3.0_'+str(i)+'yearsago']
@@ -148,39 +154,39 @@ def final_processing(encode_method, years_data, only_one, feature_set, feature_n
 
         for j in patient.columns.values:
             if not only_one:
-                constructed_data.set_value(i,str(j)+"_0yearsago", patient.iloc[years][j])
+                constructed_data.at[i,str(j)+"_0yearsago"] = patient.iloc[years][j]
                 if encode_method != "current_only":
                     if encode_method=='sma':
-                        constructed_data.set_value(i,str(j)+'_sma', patient[j].rolling(years_data+1).mean()[years_data])
+                        constructed_data.at[i,str(j)+'_sma'] = patient[j].rolling(years_data+1).mean()[years_data]
                     elif encode_method=='ema':
-                        constructed_data.set_value(i,str(j)+'_ema'+str(half_life), patient[j].ewm(halflife=half_life, adjust=False).mean()[years_data])
+                        constructed_data.at[i,str(j)+'_ema'+str(half_life)] = patient[j].ewm(halflife=half_life, adjust=False).mean()[years_data]
                     elif encode_method=='all_ma':
-                        constructed_data.set_value(i,str(j)+'_sma', patient[j].rolling(years_data+1).mean()[years_data])
-                        constructed_data.set_value(i,str(j)+'_ema1', patient[j].ewm(halflife=1, adjust=False).mean()[years_data])
-                        constructed_data.set_value(i,str(j)+'_ema2', patient[j].ewm(halflife=2, adjust=False).mean()[years_data])
-                        constructed_data.set_value(i,str(j)+'_ema3', patient[j].ewm(halflife=3, adjust=False).mean()[years_data])
+                        constructed_data.at[i,str(j)+'_sma'] = patient[j].rolling(years_data+1).mean()[years_data]
+                        constructed_data.at[i,str(j)+'_ema1'] = patient[j].ewm(halflife=1, adjust=False).mean()[years_data]
+                        constructed_data.at[i,str(j)+'_ema2'] = patient[j].ewm(halflife=2, adjust=False).mean()[years_data]
+                        constructed_data.at[i,str(j)+'_ema3'] = patient[j].ewm(halflife=3, adjust=False).mean()[years_data]
                     elif encode_method=='slopes':
-                        constructed_data.set_value(i,str(j)+'_overalltrajectory',(patient.iloc[0][j]-patient.iloc[years_data][j])/(years_data))
+                        constructed_data.at[i,str(j)+'_overalltrajectory'] = (patient.iloc[0][j]-patient.iloc[years_data][j])/(years_data)
                         for k in range(0,years_data):
-                            constructed_data.set_value(i,str(j)+'_yr'+str(k+1)+'to'+str(k)+'trajectory',patient.iloc[years-(k+1)][j]-patient.iloc[years-k][j])
+                            constructed_data.at[i,str(j)+'_yr'+str(k+1)+'to'+str(k)+'trajectory'] = patient.iloc[years-(k+1)][j]-patient.iloc[years-k][j]
                         for k in range(1,years_data+1):
-                            constructed_data.set_value(i,str(j)+'_'+str(k)+'yearsago', patient.iloc[years-k][j])
+                            constructed_data.at[i,str(j)+'_'+str(k)+'yearsago'] = patient.iloc[years-k][j]
                     else:
                         for k in range(1,years_data+1):
-                            constructed_data.set_value(i,str(j)+'_'+str(k)+'yearsago', patient.iloc[years-k][j])
+                            constructed_data.at[i,str(j)+'_'+str(k)+'yearsago'] = patient.iloc[years-k][j]
             else:
                 if encode_method != "current_only":
                     if encode_method=='sma':
-                        constructed_data.set_value(i,str(j)+'_sma', patient[j].rolling(years_data+1).mean()[years_data])
+                        constructed_data.at[i,str(j)+'_sma'] = patient[j].rolling(years_data+1).mean()[years_data]
                     elif encode_method=='ema':
-                        constructed_data.set_value(i,str(j)+'_ema'+str(half_life), patient[j].ewm(halflife=half_life, adjust=False).mean()[years_data])
+                        constructed_data.at[i,str(j)+'_ema'+str(half_life)] = patient[j].ewm(halflife=half_life, adjust=False).mean()[years_data]
                     elif encode_method=='all_ma':
-                        constructed_data.set_value(i,str(j)+'_sma', patient[j].rolling(years_data+1).mean()[years_data])
-                        constructed_data.set_value(i,str(j)+'_ema1', patient[j].ewm(halflife=1, adjust=False).mean()[years_data])
-                        constructed_data.set_value(i,str(j)+'_ema2', patient[j].ewm(halflife=2, adjust=False).mean()[years_data])
-                        constructed_data.set_value(i,str(j)+'_ema3', patient[j].ewm(halflife=3, adjust=False).mean()[years_data])
+                        constructed_data.at[i,str(j)+'_sma'] = patient[j].rolling(years_data+1).mean()[years_data]
+                        constructed_data.at[i,str(j)+'_ema1'] = patient[j].ewm(halflife=1, adjust=False).mean()[years_data]
+                        constructed_data.at[i,str(j)+'_ema2'] = patient[j].ewm(halflife=2, adjust=False).mean()[years_data]
+                        constructed_data.at[i,str(j)+'_ema3'] = patient[j].ewm(halflife=3, adjust=False).mean()[years_data]
                     else:
-                        constructed_data.set_value(i,str(j), patient.iloc[years-years_data][j])
+                        constructed_data.at[i,str(j)] = patient.iloc[years-years_data][j]
     return constructed_data
 
 
@@ -227,6 +233,7 @@ def normalize_names(data_matrix):
                           'cts_story': 'Logical Memory I Immediate',
                           'cts_lopair': 'Line Orientation',
                           'cts_ebmt': 'East Boston Immediate Recall',
+                          'cts_ebdr': 'East Boston Delayed Recall',
                           'cts_animals': 'Categorical Fluency: Animals',
                           'cts_stroop_cname': 'Stroop Color Naming',
                           'cts_nccrtd': 'Number Comparison',
@@ -267,6 +274,7 @@ def normalize_names(data_matrix):
                           'cts_story_1yearsago': 'Logical Memory I Immediate at t-1',
                           'cts_lopair_1yearsago': 'Line Orientation at t-1',
                           'cts_ebmt_1yearsago': 'East Boston Immediate Recall at t-1',
+                          'cts_ebdr_1yearsago': 'East Boston Delayed Recall at t-1',
                           'cts_animals_1yearsago': 'Categorical Fluency: Animals at t-1',
                           'cts_stroop_cname_1yearsago': 'Stroop Color Naming at t-1',
                           'cts_nccrtd_1yearsago': 'Number Comparison at t-1',
@@ -287,6 +295,7 @@ def normalize_names(data_matrix):
                           'cts_story_2yearsago': 'Logical Memory I Immediate at t-2',
                           'cts_lopair_2yearsago': 'Line Orientation at t-2',
                           'cts_ebmt_2yearsago': 'East Boston Immediate Recall at t-2',
+                          'cts_ebdr_2yearsago': 'East Boston Delayed Recall at t-2',
                           'cts_animals_2yearsago': 'Categorical Fluency: Animals at t-2',
                           'cts_stroop_cname_2yearsago': 'Stroop Color Naming at t-2',
                           'cts_nccrtd_2yearsago': 'Number Comparison at t-2',

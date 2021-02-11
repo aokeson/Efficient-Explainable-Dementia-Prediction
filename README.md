@@ -16,6 +16,7 @@ Note: data files are not available in this repository due to data privacy. Instr
  - ***Data_Processing/***
     - **1_ROSMAP_preprocess_data_windows.ipynb** - Obtain samples with appropriate "input data window" and "prediction windows" for longitudinal risk prediction. Split samples into appropriate cross-validation and test sets. 
     - **2_standardizing_variables.ipynb** - Normalizes variables for modeling. 
+    - **2.1_standardizing_variables-jbhi_revision.ipynb** - Additional analyses added for JBHI revision (added some analyses to determine which rows/columns to keep for missing data imputation experiements; code to do pre-processing for data with normalized cognition scores based on age/sex/edu )
     - **3_Processing_impute_and_stack_features.ipynb** - Perform some additional pre-processing for modeling.
     - **4_Downsampling.ipynb** - Implementation for various downsampling methods evaluated. 
 
@@ -27,6 +28,7 @@ Note: data files are not available in this repository due to data privacy. Instr
     - **cross_validation_MLP_and_LSTM.ipynb** - Examples of cross-validation training runs for deep learning methods (MLP and LSTM).
     - **summarize_CV_results.ipynb** - Compute average validation performance of all models. Generate plots comparing performance across different years of available data. 
     - **final_models.ipynb** - Train and obtain performance metrics for our model and all baselines.
+    - **final_models-demographics_controlled_cognition.ipynb** - Model for predicting dementia onset from demographics-normalized cognition scores. 
     - **figures_scripts.ipynb** - Scripts to generate figures for the paper.
     - **processing_helper_functions.py** - Helper functions used in other notebooks to do final feature and label data processing.
 
